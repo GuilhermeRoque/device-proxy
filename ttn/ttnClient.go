@@ -1,6 +1,7 @@
 package ttn
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -9,10 +10,10 @@ import (
 	"os"
 )
 
-var baseUrlInflux = os.Getenv("baseUrlInflux")
-var tokenInflux = os.Getenv("tokenInflux")
-var bucketInflux = os.Getenv("bucketInflux")
-var organizationInflux = os.Getenv("organizationInflux")
+var baseUrlInflux = os.Getenv("BASE_URL_INFLUX")
+var tokenInflux = os.Getenv("TOKEN_INFLUX")
+var bucketInflux = os.Getenv("BUCKET_INFLUX")
+var organizationInflux = os.Getenv("ORGANIZATION_INFLUX")
 
 type SensorUplink struct {
 	End_device_ids struct {
@@ -22,12 +23,7 @@ type SensorUplink struct {
 		}
 	}
 	Uplink_message struct {
-		Decoded_payload struct {
-			Battery     int
-			Event       string
-			Light       int
-			Temperature float32
-		}
+		Frm_payload string
 	}
 }
 
@@ -39,13 +35,15 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	_ = json.Unmarshal(msg.Payload(), &data)
 	endDeviceId := data.End_device_ids.Device_id
 	appId := data.End_device_ids.Application_ids.Application_id
-	temperature := data.Uplink_message.Decoded_payload.Temperature
+	value := data.Uplink_message.Frm_payload
+	decodedString, _ := base64.StdEncoding.DecodeString(value)
 	sensorData := influx.SensorData{
 		Measurement: appId,
 		Unit:        endDeviceId,
-		Value:       temperature,
+		Value:       decodedString[0],
 	}
-	log.Println(fmt.Sprintf("deviceId %s appId %s temperature %f", endDeviceId, appId, temperature))
+
+	log.Println(fmt.Sprintf("deviceId %s appId %s value %d", endDeviceId, appId, value))
 	influxClient.WriteData(sensorData)
 }
 

@@ -12,7 +12,7 @@ import (
 type SensorData struct {
 	Measurement string
 	Unit        string
-	Value       float32
+	Value       interface{}
 }
 
 type InfluxClient struct {
