@@ -2,20 +2,17 @@ package ttn
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"log"
 	"lorawanMgnt/influx"
+	"math"
 	"os"
 )
 
-var baseUrlInflux = os.Getenv("BASE_URL_INFLUX")
-var tokenInflux = os.Getenv("TOKEN_INFLUX")
-var bucketInflux = os.Getenv("BUCKET_INFLUX")
-var organizationInflux = os.Getenv("ORGANIZATION_INFLUX")
-
-type SensorUplink struct {
+type DeviceUplink struct {
 	End_device_ids struct {
 		Device_id       string
 		Application_ids struct {
@@ -27,32 +24,36 @@ type SensorUplink struct {
 	}
 }
 
-var influxClient = influx.NewInfluxClient(baseUrlInflux, tokenInflux, organizationInflux, bucketInflux)
-
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
-	var data SensorUplink
+	var data DeviceUplink
 	_ = json.Unmarshal(msg.Payload(), &data)
 	endDeviceId := data.End_device_ids.Device_id
 	appId := data.End_device_ids.Application_ids.Application_id
 	value := data.Uplink_message.Frm_payload
 	decodedString, _ := base64.StdEncoding.DecodeString(value)
+	bits := binary.BigEndian.Uint32(decodedString)
+	valueFloat := math.Float32frombits(bits)
+	log.Printf("deviceId %s appId %s raw value %s decoded string %X bits %X float %f", endDeviceId, appId, value, decodedString, bits, valueFloat)
 	sensorData := influx.SensorData{
 		Measurement: appId,
 		Unit:        endDeviceId,
-		Value:       decodedString[0],
+		Value:       valueFloat,
 	}
-
-	log.Println(fmt.Sprintf("deviceId %s appId %s value %d", endDeviceId, appId, value))
+	var baseUrlInflux = os.Getenv("BASE_URL_INFLUX")
+	var tokenInflux = os.Getenv("TOKEN_INFLUX")
+	var bucketInflux = os.Getenv("BUCKET_INFLUX")
+	var organizationInflux = os.Getenv("ORGANIZATION_INFLUX")
+	var influxClient = influx.NewInfluxClient(baseUrlInflux, tokenInflux, organizationInflux, bucketInflux)
 	influxClient.WriteData(sensorData)
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
+	log.Println("Connected")
 }
 
 var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connect lost: %v", err)
+	log.Printf("Connect lost: %v", err)
 }
 
 type TtnClient struct {
@@ -72,7 +73,7 @@ func (ttnClient *TtnClient) subscribe() {
 	topicDevicesUp := fmt.Sprintf("v3/%s/devices/#", username)
 	token := ttnClient.client.Subscribe(topicDevicesUp, 1, nil)
 	token.Wait()
-	fmt.Printf("Subscribed to topic: %s", topicDevicesUp)
+	log.Printf("Subscribed to topic: %s", topicDevicesUp)
 }
 
 func (ttnClient *TtnClient) Close() {

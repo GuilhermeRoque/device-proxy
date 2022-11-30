@@ -41,6 +41,8 @@ func (influxClient *InfluxClient) WriteData(data SensorData) {
 		AddTag("device", data.Unit).
 		AddField("value", data.Value).
 		SetTime(time.Now())
+
+	log.Printf("Writing point: %+v into server %s bucket %s org %s", data, influxClient.client.ServerURL(), influxClient.bucket, influxClient.org)
 	err := writeAPI.WritePoint(context.Background(), p)
 	if err != nil {
 		log.Println(err)
