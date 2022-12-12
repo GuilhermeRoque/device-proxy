@@ -10,6 +10,7 @@ import (
 	"lorawanMgnt/influx"
 	"math"
 	"os"
+	"time"
 )
 
 type DeviceUplink struct {
@@ -19,26 +20,30 @@ type DeviceUplink struct {
 			Application_id string
 		}
 	}
+	Received_at    string
 	Uplink_message struct {
 		Frm_payload string
 	}
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+	log.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
 	var data DeviceUplink
 	_ = json.Unmarshal(msg.Payload(), &data)
 	endDeviceId := data.End_device_ids.Device_id
 	appId := data.End_device_ids.Application_ids.Application_id
+	receivedAt := data.Received_at
 	value := data.Uplink_message.Frm_payload
 	decodedString, _ := base64.StdEncoding.DecodeString(value)
 	bits := binary.BigEndian.Uint32(decodedString)
 	valueFloat := math.Float32frombits(bits)
-	log.Printf("deviceId %s appId %s raw value %s decoded string %X bits %X float %f", endDeviceId, appId, value, decodedString, bits, valueFloat)
-	sensorData := influx.SensorData{
+	timestamp, _ := time.Parse(time.RFC3339, receivedAt)
+	log.Printf("deviceId %s appId %s raw value %s decoded string %X bits %X float %f timestamp %s", endDeviceId, appId, value, decodedString, bits, valueFloat, timestamp)
+	var sensorData = influx.SensorData{
 		Measurement: appId,
 		Unit:        endDeviceId,
 		Value:       valueFloat,
+		Timestamp:   timestamp,
 	}
 	var baseUrlInflux = os.Getenv("BASE_URL_INFLUX")
 	var tokenInflux = os.Getenv("TOKEN_INFLUX")
@@ -68,9 +73,39 @@ func (ttnClient *TtnClient) Connect() {
 	ttnClient.subscribe()
 }
 
+type DownlinkPayload struct {
+	Frm_payload string `json:"frm_payload"`
+	F_port      uint8  `json:"f_port"`
+	Priority    string `json:"priority"`
+}
+
+type DownlinkMsg struct {
+	Downlinks []DownlinkPayload `json:"downlinks"`
+}
+
+func (ttnClient *TtnClient) Publish(deviceId string, payload []byte) {
+	username := fmt.Sprintf("%s@ttn", ttnClient.applicationName)
+	topic := fmt.Sprintf("v3/%s/devices/%s/down/push", username, deviceId)
+	downlinkPayload := DownlinkPayload{
+		Frm_payload: base64.StdEncoding.EncodeToString(payload),
+		F_port:      1,
+		Priority:    "NORMAL",
+	}
+	payloads := []DownlinkPayload{downlinkPayload}
+	msg := DownlinkMsg{Downlinks: payloads}
+	jsonMsg, _ := json.Marshal(msg)
+	log.Printf("Sending %s to %s\n", jsonMsg, topic)
+	ttnClient.client.Publish(
+		topic,
+		1,
+		false,
+		jsonMsg,
+	)
+}
+
 func (ttnClient *TtnClient) subscribe() {
 	username := fmt.Sprintf("%s@ttn", ttnClient.applicationName)
-	topicDevicesUp := fmt.Sprintf("v3/%s/devices/#", username)
+	topicDevicesUp := fmt.Sprintf("v3/%s/devices/up", username)
 	token := ttnClient.client.Subscribe(topicDevicesUp, 1, nil)
 	token.Wait()
 	log.Printf("Subscribed to topic: %s", topicDevicesUp)

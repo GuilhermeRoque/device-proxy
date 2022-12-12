@@ -17,19 +17,20 @@ type Application struct {
 }
 
 type Device struct {
-	Name      string     `json:"name"`
-	DeviceId  string     `json:"devId"`
-	DeviceEUI string     `json:"devEUI"`
-	Service   ServiceCfg `json:"serviceProfile"`
+	Name       string     `json:"name"`
+	DeviceId   string     `json:"devId"`
+	DeviceEUI  string     `json:"devEUI"`
+	Service    ServiceCfg `json:"serviceProfile"`
+	Configured bool       `json:"configured"`
 }
 
 type ServiceCfg struct {
-	Name         string  `json:"name"`
-	DataType     float32 `json:"dataType"`
-	ChannelType  float32 `json:"channelType"`
-	ChannelParam float32 `json:"channelParam"`
-	Acquisition  float32 `json:"acquisition"`
-	Period       float32 `json:"period"`
+	Name         string `json:"name"`
+	DataType     uint8  `json:"dataType"`
+	ChannelType  uint8  `json:"channelType"`
+	ChannelParam uint8  `json:"channelParam"`
+	Acquisition  uint8  `json:"acquisition"`
+	Period       uint8  `json:"period"`
 }
 
 type TtnApplication struct {
@@ -53,6 +54,27 @@ func (appMgr *ApplicationMgr) AddApplication(app *Application) error {
 		ttnClient: ttnClient,
 	}
 	appMgr.ttnApplications = append(appMgr.ttnApplications, ttnApplication)
+	for _, device := range ttnApplication.app.Devices {
+		if !device.Configured || (device.Service == ServiceCfg{}) {
+			continue
+		}
+		service := device.Service
+		defaultFport := uint8(2)
+		defaultAck := uint8(0)
+		defaultNApps := uint8(1)
+		payloadService := []byte{
+			defaultFport,
+			service.DataType,
+			service.ChannelType,
+			service.ChannelParam,
+			service.Acquisition,
+			defaultAck,
+			service.Period,
+		}
+		controlMessage := append([]byte{defaultNApps}, payloadService...)
+		log.Printf("Sending control message %X to device %s", controlMessage, device.DeviceId)
+		ttnApplication.ttnClient.Publish(device.DeviceId, controlMessage)
+	}
 	return nil
 }
 

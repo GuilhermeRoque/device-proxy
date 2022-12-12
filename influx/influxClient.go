@@ -13,6 +13,7 @@ type SensorData struct {
 	Measurement string
 	Unit        string
 	Value       interface{}
+	Timestamp   time.Time
 }
 
 type InfluxClient struct {
@@ -40,7 +41,7 @@ func (influxClient *InfluxClient) WriteData(data SensorData) {
 	p := influxdb2.NewPointWithMeasurement(data.Measurement).
 		AddTag("device", data.Unit).
 		AddField("value", data.Value).
-		SetTime(time.Now())
+		SetTime(data.Timestamp)
 
 	log.Printf("Writing point: %+v into server %s bucket %s org %s", data, influxClient.client.ServerURL(), influxClient.bucket, influxClient.org)
 	err := writeAPI.WritePoint(context.Background(), p)
