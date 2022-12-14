@@ -30,7 +30,7 @@ type ServiceCfg struct {
 	ChannelType  uint8  `json:"channelType"`
 	ChannelParam uint8  `json:"channelParam"`
 	Acquisition  uint8  `json:"acquisition"`
-	Period       uint8  `json:"period"`
+	Period       uint32 `json:"period"`
 }
 
 type TtnApplication struct {
@@ -62,18 +62,19 @@ func (appMgr *ApplicationMgr) AddApplication(app *Application) error {
 		defaultFport := uint8(2)
 		defaultAck := uint8(0)
 		defaultNApps := uint8(1)
+
 		payloadService := []byte{
 			defaultFport,
-			service.DataType,
-			service.ChannelType,
-			service.ChannelParam,
-			service.Acquisition,
-			defaultAck,
-			service.Period,
+			(service.DataType << 5) | (service.ChannelType << 1) | (service.ChannelParam >> 3 & 0x1),
+			(service.ChannelParam << 5) | (service.Acquisition << 2) | (defaultAck << 1) | (uint8(service.Period >> 16)),
+			uint8(service.Period >> 8),
+			uint8(service.Period),
 		}
+
 		controlMessage := append([]byte{defaultNApps}, payloadService...)
 		log.Printf("Sending control message %X to device %s", controlMessage, device.DeviceId)
 		ttnApplication.ttnClient.Publish(device.DeviceId, controlMessage)
+
 	}
 	return nil
 }
