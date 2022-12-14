@@ -2,7 +2,6 @@ package influx
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -46,36 +45,6 @@ func (influxClient *InfluxClient) WriteData(data SensorData) {
 	log.Printf("Writing point: %+v into server %s bucket %s org %s", data, influxClient.client.ServerURL(), influxClient.bucket, influxClient.org)
 	err := writeAPI.WritePoint(context.Background(), p)
 	if err != nil {
-		log.Println(err)
-	}
-}
-
-func (influxClient *InfluxClient) queryData(measurement string) {
-	// Get query client
-	queryAPI := influxClient.client.QueryAPI(influxClient.org)
-
-	// Get parser flux query result
-	query := fmt.Sprintf(
-		`from(bucket:"%s")|> range(start: -1h) |> filter(fn: (r) => r._measurement == "%s")`,
-		influxClient.bucket,
-		measurement)
-
-	result, err := queryAPI.Query(context.Background(), query)
-	if err == nil {
-		// Use Next() to iterate over query result lines
-		for result.Next() {
-			// Observe when there is new grouping key producing new table
-			if result.TableChanged() {
-				fmt.Printf("table: %s\n", result.TableMetadata().String())
-			}
-			// read result
-			values := result.Record().Values()
-			fmt.Printf("%v\n", values)
-		}
-		if result.Err() != nil {
-			fmt.Printf("Query error: %s\n", result.Err().Error())
-		}
-	} else {
 		log.Println(err)
 	}
 }
