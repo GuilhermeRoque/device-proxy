@@ -79,10 +79,7 @@ func (ttnApplication *TtnApplication) messagePubHandler(client mqtt.Client, msg 
 		Timestamp:   timestamp,
 	}
 	var baseUrlInflux = os.Getenv("BASE_URL_INFLUX")
-	var tokenInflux = os.Getenv("TOKEN_INFLUX")
-	var bucketInflux = os.Getenv("BUCKET_INFLUX")
-	var organizationInflux = os.Getenv("ORGANIZATION_INFLUX")
-	var influxClient = influx.NewInfluxClient(baseUrlInflux, tokenInflux, organizationInflux, bucketInflux)
+	var influxClient = influx.NewInfluxClient(baseUrlInflux, ttnApplication.app.Token, ttnApplication.app.Organization, ttnApplication.app.Bucket)
 	influxClient.WriteData(sensorData)
 }
 

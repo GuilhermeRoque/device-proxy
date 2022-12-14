@@ -7,6 +7,7 @@ type Application struct {
 	Bucket        string   `json:"bucket"`
 	Token         string   `json:"token"`
 	Devices       []Device `json:"devices"`
+	Organization  string   `json:"organization"`
 }
 
 type Device struct {
