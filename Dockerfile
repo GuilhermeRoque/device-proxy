@@ -3,7 +3,7 @@ WORKDIR /root
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
-COPY ./src ./
-RUN ["go", "build", "-o", "device-proxy", "main.go"]
+COPY src ./src
+RUN ["go", "build", "-o", "device-proxy", "./src/main.go"]
 EXPOSE 3333
-CMD ["go", "run", "main.go"]
+CMD ["./device-proxy"]

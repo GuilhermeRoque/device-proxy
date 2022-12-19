@@ -11,7 +11,7 @@ func main() {
 	log.Println("Loading ENV...")
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalln(err)
+		log.Printf("Error loading env %v", err)
 	}
 	log.Println("Running...")
 	//service := application.ServiceCfg{
