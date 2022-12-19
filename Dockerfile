@@ -1,12 +1,9 @@
-FROM golang:1.18.3-buster
-WORKDIR /app
-COPY . .
-ENV TOKEN_INFLUX=8s7p1LY3SSGWX-yH2UAKPKABloCcH2s3MwWr71sKRsCBYbloJn_iYP70-ZUhOXi7870CYesIT5SNeYHsxFU4rQ==
-ENV BUCKET_INFLUX=lorawanMgnt-bucket
-ENV ORGANIZATION_INFLUX=lorawanMgnt-org
-ENV BASE_URL_INFLUX=http://localhost:3333
-ENV BROKER_TTN=localhost
-ENV PORT_TTN=1883
-ENV APPLICATION_MGR=localhost:3333
-CMD ["go", "run", "main.go"]
+FROM golang:1.18-bullseye
+WORKDIR /root
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
+COPY ./src ./
+RUN ["go", "build", "-o", "device-proxy", "main.go"]
 EXPOSE 3333
+CMD ["go", "run", "main.go"]
