@@ -8,6 +8,7 @@ import (
 	application2 "lorawanMgnt/src/application"
 	"net/url"
 	"os"
+	"time"
 )
 
 type BulkAddApplicationResponse struct {
@@ -59,11 +60,17 @@ func (wsClient *WsClient) connect() {
 	appURL := u.String()
 	log.Printf("connecting to %s", appURL)
 
-	conn, _, err := websocket.DefaultDialer.Dial(appURL, nil)
-	if err != nil {
-		log.Fatal("dial:", err)
+	for {
+		conn, _, err := websocket.DefaultDialer.Dial(appURL, nil)
+		if err != nil {
+			log.Println("Error connection WS dial:", err)
+			log.Println("Trying WS connection into 3 seconds...")
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		wsClient.conn = conn
+		break
 	}
-	wsClient.conn = conn
 }
 func (wsClient *WsClient) close() {
 	_ = wsClient.conn.Close()
