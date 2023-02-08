@@ -56,7 +56,7 @@ func (wsClient *WsClient) Run() {
 }
 
 func (wsClient *WsClient) connect() {
-	u := url.URL{Scheme: "ws", Host: os.Getenv("APPLICATION_MGR")}
+	u := url.URL{Scheme: "ws", Host: os.Getenv("APP_MGR")}
 	appURL := u.String()
 	log.Printf("connecting to %s", appURL)
 
@@ -68,6 +68,7 @@ func (wsClient *WsClient) connect() {
 			time.Sleep(3 * time.Second)
 			continue
 		}
+		log.Println("WS connected!")
 		wsClient.conn = conn
 		break
 	}
