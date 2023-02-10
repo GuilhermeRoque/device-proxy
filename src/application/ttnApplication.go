@@ -15,7 +15,7 @@ import (
 
 type TtnApplication struct {
 	client mqtt.Client
-	app    *Application
+	app    Application
 }
 
 func (ttnApplication *TtnApplication) sendDeviceCfgById(deviceId string) {
@@ -112,14 +112,14 @@ func (ttnApplication *TtnApplication) subscribe() {
 	topicDevicesJoin := fmt.Sprintf("v3/%s/devices/+/join", username)
 	tokenJoin := ttnApplication.client.Subscribe(topicDevicesJoin, 1, ttnApplication.messageJoinHandler)
 	tokenJoin.Wait()
-	log.Printf("Subscribed to topic: %s", tokenJoin)
+	log.Printf("Subscribed to topic: %s", topicDevicesUp)
 }
 
 func (ttnApplication *TtnApplication) Close() {
 	ttnApplication.client.Disconnect(250)
 }
 
-func NewTtnApp(broker string, port uint32, application *Application) *TtnApplication {
+func NewTtnApp(broker string, port uint32, application Application) *TtnApplication {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
 	username := fmt.Sprintf("%s@ttn", application.ApplicationId)

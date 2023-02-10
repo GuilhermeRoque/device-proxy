@@ -10,7 +10,7 @@ type ApplicationMgr struct {
 	ttnApplications []*TtnApplication
 }
 
-func (appMgr *ApplicationMgr) AddApplication(app *Application) error {
+func (appMgr *ApplicationMgr) AddApplication(app Application) error {
 	var brokerTTN = os.Getenv("BROKER_TTN")
 	var portTTN = os.Getenv("PORT_TTN")
 	portTTNInt, _ := strconv.Atoi(portTTN)
@@ -32,6 +32,7 @@ func (appMgr *ApplicationMgr) AddApplication(app *Application) error {
 func (appMgr *ApplicationMgr) IsApplicationNew(newApplication Application) bool {
 	isNew := true
 	for _, ttnApp := range appMgr.ttnApplications {
+		log.Printf("ttnApp.app.ApplicationId %s newApplication.ApplicationId %s", ttnApp.app.ApplicationId, newApplication.ApplicationId)
 		if ttnApp.app.ApplicationId == newApplication.ApplicationId {
 			isNew = false
 			break
@@ -51,7 +52,7 @@ func (appMgr *ApplicationMgr) UpdateConfigDevices(newApplication Application) bo
 					if deviceNew.DeviceId == device.DeviceId {
 						log.Printf("Found device!")
 						if true {
-							//if deviceNew.UpdateCfg {
+							//if deviceNew.| {
 							log.Printf("Device new will be updated")
 							if !deviceNew.Configured || (deviceNew.Service == ServiceCfg{}) {
 								log.Printf("Device new has no cfg")

@@ -89,10 +89,12 @@ func (wsClient *WsClient) bulkAddApplication(newApplications []application2.Appl
 	err = nil
 	log.Printf("RECEIVED APPLICATIONS %+v", newApplications)
 	for _, newApplication := range newApplications {
+		log.Printf("Checking application %+v", newApplication)
 		isNew := wsClient.appMgr.IsApplicationNew(newApplication)
+		log.Printf("isNew %t", isNew)
 		if isNew {
 			if os.Getenv("APP_ENV") != "local" {
-				err = wsClient.appMgr.AddApplication(&newApplication)
+				err = wsClient.appMgr.AddApplication(newApplication)
 			}
 			if err != nil {
 				newApplicationsResponse = append(newApplicationsResponse, AddApplicationResponse{
