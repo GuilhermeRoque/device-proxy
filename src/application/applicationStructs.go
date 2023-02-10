@@ -16,6 +16,7 @@ type Device struct {
 	DeviceEUI  string     `json:"devEUI"`
 	Service    ServiceCfg `json:"serviceProfile"`
 	Configured bool       `json:"configured"`
+	UpdateCfg  bool       `json:"update"`
 }
 
 type ServiceCfg struct {

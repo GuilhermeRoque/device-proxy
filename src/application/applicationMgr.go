@@ -23,6 +23,7 @@ func (appMgr *ApplicationMgr) AddApplication(app *Application) error {
 			continue
 		}
 		ttnApplication.sendDeviceCfg(device)
+		device.UpdateCfg = false
 
 	}
 	return nil
@@ -42,20 +43,34 @@ func (appMgr *ApplicationMgr) IsApplicationNew(newApplication Application) bool 
 func (appMgr *ApplicationMgr) UpdateConfigDevices(newApplication Application) bool {
 	for _, ttnApp := range appMgr.ttnApplications {
 		if ttnApp.app.ApplicationId == newApplication.ApplicationId {
-			for _, device := range ttnApp.app.Devices {
-				if !device.Configured || (device.Service == ServiceCfg{}) {
-					continue
-				}
-				for index, deviceNew := range newApplication.Devices {
+			log.Println("Found application! Updating devices...")
+			for index, device := range ttnApp.app.Devices {
+				log.Printf("Looking for old device %v", device)
+				for _, deviceNew := range newApplication.Devices {
+					log.Printf("Looking for new device %v", deviceNew)
 					if deviceNew.DeviceId == device.DeviceId {
-						ttnApp.app.Devices[index] = deviceNew
-						ttnApp.sendDeviceCfg(deviceNew)
-						break
+						log.Printf("Found device!")
+						if true {
+							//if deviceNew.UpdateCfg {
+							log.Printf("Device new will be updated")
+							if !deviceNew.Configured || (deviceNew.Service == ServiceCfg{}) {
+								log.Printf("Device new has no cfg")
+							} else {
+								log.Printf("Device new has cfg and will be updated")
+								deviceNew.UpdateCfg = false
+								ttnApp.app.Devices[index] = deviceNew
+								ttnApp.sendDeviceCfg(deviceNew)
+							}
+						} else {
+							log.Printf("Device new will not be updated %v", device)
+						}
+
 					}
 				}
 			}
-			break
+			return true
 		}
 	}
+	log.Println("Application not found...")
 	return false
 }
