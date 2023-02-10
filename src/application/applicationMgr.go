@@ -38,3 +38,24 @@ func (appMgr *ApplicationMgr) IsApplicationNew(newApplication Application) bool 
 	}
 	return isNew
 }
+
+func (appMgr *ApplicationMgr) UpdateConfigDevices(newApplication Application) bool {
+	for _, ttnApp := range appMgr.ttnApplications {
+		if ttnApp.app.ApplicationId == newApplication.ApplicationId {
+			for _, device := range ttnApp.app.Devices {
+				if !device.Configured || (device.Service == ServiceCfg{}) {
+					continue
+				}
+				for index, deviceNew := range newApplication.Devices {
+					if deviceNew.DeviceId == device.DeviceId {
+						ttnApp.app.Devices[index] = deviceNew
+						ttnApp.sendDeviceCfg(deviceNew)
+						break
+					}
+				}
+			}
+			break
+		}
+	}
+	return false
+}

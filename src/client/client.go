@@ -110,8 +110,9 @@ func (wsClient *WsClient) bulkAddApplication(newApplications []application2.Appl
 			newApplicationsResponse = append(newApplicationsResponse, AddApplicationResponse{
 				ApplicationId: newApplication.ApplicationId,
 				Status:        202,
-				Message:       "Application already added",
+				Message:       "Application already added. Devices cfg will be updated",
 			})
+			wsClient.appMgr.UpdateConfigDevices(newApplication)
 		}
 		countOk += 1
 	}
